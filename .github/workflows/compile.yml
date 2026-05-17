@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
+    - name: Checkout source
       uses: actions/checkout@v4
       with:
         submodules: recursive
@@ -49,10 +49,10 @@ jobs:
           zlib1g-dev \
           gcc-aarch64-linux-gnu
 
-    - name: Clone Neutron Clang
+    - name: Clone Proton Clang
       run: |
         git clone --depth=1 \
-          https://github.com/Neutron-Toolchains/clang.git \
+          https://github.com/kdrag0n/proton-clang.git \
           clang
 
     - name: Prepare output
