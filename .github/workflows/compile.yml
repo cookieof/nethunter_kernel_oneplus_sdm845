@@ -31,13 +31,12 @@ jobs:
           release: true
           access-token: ${{ secrets.GITHUB_TOKEN }}
           
-          # 【核心大招】手动注入一加 6/6T 老内核高版本适配所必须的交叉编译参数，彻底解决 Stop 报错
-          extra-make-args: [
-            "CLANG_TRIPLE=aarch64-linux-gnu-",
-            "LD=ld.lld",
-            "AR=llvm-ar",
-            "NM=llvm-nm",
-            "OBJCOPY=llvm-objcopy",
-            "OBJDUMP=llvm-objdump",
-            "STRIP=llvm-strip"
-          ]
+          # 【语法彻底修正】改用 "|" 符号，这是 GitHub 官方标准的多行参数传入方式，绝不再报格式错误
+          extra-make-args: |
+            CLANG_TRIPLE=aarch64-linux-gnu-
+            LD=ld.lld
+            AR=llvm-ar
+            NM=llvm-nm
+            OBJCOPY=llvm-objcopy
+            OBJDUMP=llvm-objdump
+            STRIP=llvm-strip
