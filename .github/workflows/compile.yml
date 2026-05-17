@@ -1,4 +1,4 @@
-name: Build OnePlus SDM845 Kernel
+name: Build OnePlus 6 NetHunter Kernel
 
 on:
   workflow_dispatch:
@@ -8,26 +8,58 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
+    - name: Checkout source
       uses: actions/checkout@v4
 
-    - name: Install packages
+    - name: Install dependencies
       run: |
         sudo apt update
 
         sudo apt install -y \
-          git bc bison build-essential curl flex g++-multilib \
-          gcc-multilib gnupg gperf imagemagick lib32ncurses5-dev \
-          lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev \
-          libsdl1.2-dev libssl-dev lzop pngcrush rsync schedtool \
-          squashfs-tools xsltproc zip zlib1g-dev \
-          gcc-aarch64-linux-gnu python3
+          bc \
+          bison \
+          build-essential \
+          ccache \
+          curl \
+          flex \
+          g++-multilib \
+          gcc-multilib \
+          git \
+          gnupg \
+          gperf \
+          imagemagick \
+          lib32ncurses5-dev \
+          lib32readline-dev \
+          lib32z1-dev \
+          libelf-dev \
+          liblz4-tool \
+          libncurses5-dev \
+          libsdl1.2-dev \
+          libssl-dev \
+          lld \
+          lz4 \
+          lzop \
+          pngcrush \
+          rsync \
+          schedtool \
+          squashfs-tools \
+          unzip \
+          xz-utils \
+          zip \
+          zlib1g-dev \
+          gcc-aarch64-linux-gnu
 
-    - name: Clone Proton Clang
+    - name: Clone Neutron Clang
       run: |
-        git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+        git clone --depth=1 \
+          https://github.com/Neutron-Toolchains/clang.git \
+          clang
 
-    - name: Build Kernel
+    - name: Show compiler
+      run: |
+        clang/bin/clang --version
+
+    - name: Build kernel
       run: |
         export ARCH=arm64
         export SUBARCH=arm64
@@ -37,21 +69,40 @@ jobs:
 
         export PATH=$PWD/clang/bin:$PATH
 
-        make O=out clean
+        mkdir -p out
 
-        make O=out \
-          ARCH=arm64 \
-          vendor/sdm845-perf_defconfig
+        make O=out ARCH=arm64 clean
 
-        make -j$(nproc --all) O=out \
+        make O=out ARCH=arm64 enchilada_defconfig
+
+        make -j$(nproc --all) \
+          O=out \
           ARCH=arm64 \
           CC=clang \
+          CROSS_COMPILE=aarch64-linux-gnu- \
           CLANG_TRIPLE=aarch64-linux-gnu- \
-          CROSS_COMPILE=aarch64-linux-gnu-
+          LD=ld.lld \
+          AR=llvm-ar \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip
 
-    - name: Upload Image
+    - name: Verify output
+      run: |
+        ls -lah out/arch/arm64/boot/
+
+    - name: Upload Image.gz-dtb
       uses: actions/upload-artifact@v4
       with:
-        name: kernel-image
+        name: OnePlus6-Kernel
         path: |
           out/arch/arm64/boot/Image.gz-dtb
+
+    - name: Upload dtbo
+      uses: actions/upload-artifact@v4
+      with:
+        name: OnePlus6-dtbo
+        path: |
+          out/arch/arm64/boot/dtbo.img
+        if-no-files-found: ignore
