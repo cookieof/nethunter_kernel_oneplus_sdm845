@@ -10,7 +10,8 @@ permissions:
 jobs:
   build-kernel:
     name: Build Kernel via GitHub Actions
-    runs-on: ubuntu-22.04
+    # 【核心修改】改用 ubuntu-20.04，彻底根除 22.04 下的 GCC 包冲突
+    runs-on: ubuntu-20.04
     steps:
       - name: Build Kernel
         uses: dabao1955/kernel_build_action@main
@@ -26,12 +27,11 @@ jobs:
           
           arch: arm64
           
-          # 【核心修改】关闭 GCC，开启 Clang 和 LLVM，避开 Ubuntu 环境的包冲突
-          aosp-gcc: false
+          # 重新全部开启，在 ubuntu-20.04 下它们不会再冲突了
+          aosp-gcc: true
           aosp-clang: true
-          llvm: true
           
-          # 系统版本与 Clang 编译器版本
+          # 系统版本与 4.9 内核通用的 Clang 编译器版本
           android-version: 14
           aosp-clang-version: r450784d
           
