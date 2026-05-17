@@ -24,8 +24,6 @@ jobs:
           ccache \
           curl \
           flex \
-          g++-multilib \
-          gcc-multilib \
           git \
           gnupg \
           gperf \
@@ -57,11 +55,11 @@ jobs:
           https://github.com/Neutron-Toolchains/clang.git \
           clang
 
-    - name: Prepare
+    - name: Prepare output
       run: |
         mkdir -p out
 
-    - name: Show configs
+    - name: Show available defconfigs
       run: |
         find arch/arm64/configs -name "*enchilada*"
         find arch/arm64/configs -name "*sdm845*"
@@ -93,7 +91,11 @@ jobs:
           OBJDUMP=llvm-objdump \
           STRIP=llvm-strip
 
-    - name: Upload Image
+    - name: Verify output
+      run: |
+        ls -lah out/arch/arm64/boot/
+
+    - name: Upload Image.gz-dtb
       uses: actions/upload-artifact@v4
       with:
         name: OnePlus6-Kernel
