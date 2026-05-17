@@ -1,41 +1,57 @@
-name: Build NetHunter Kernel
+name: Build OnePlus SDM845 Kernel
 
 on:
-  workflow_dispatch: # 允许你手动点击按钮触发编译
-
-# 必须添加以下权限，否则最后一步无法上传 releases 刷机包
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  build-kernel:
-    name: Build Kernel via GitHub Actions
+  build:
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Build Kernel
-        uses: dabao1955/kernel_build_action@main
-        with:
-          # 内核源码地址
-          kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
-          
-          # 【重要修改】请根据你手机当前装的 ROM 填写对应的分支名
-          # 例如：如果你装的是 Android 14 的 LineageOS 21，这里就填 nethunter-lineage-21.0
-          kernel-branch: nethunter-lineage-21.0
-          
-          # 一加 6/6T 骁龙 845 的通用配置文件名
-          config: sdm845_defconfig 
-          
-          arch: arm64
-          aosp-gcc: true
-          aosp-clang: true
-          
-          # 【重要修改】根据你的分支适配的系统版本修改，如果是新版 LineageOS 建议设为 14
-          android-version: 14
-          aosp-clang-version: r450784d
-          
-          # 自动打包并上传
-          anykernel3: true
-          release: true
-          
-          # 传递 GitHub Token 用于发布 Release
-          access-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install packages
+      run: |
+        sudo apt update
+
+        sudo apt install -y \
+          git bc bison build-essential curl flex g++-multilib \
+          gcc-multilib gnupg gperf imagemagick lib32ncurses5-dev \
+          lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev \
+          libsdl1.2-dev libssl-dev lzop pngcrush rsync schedtool \
+          squashfs-tools xsltproc zip zlib1g-dev \
+          gcc-aarch64-linux-gnu python3
+
+    - name: Clone Proton Clang
+      run: |
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+
+    - name: Build Kernel
+      run: |
+        export ARCH=arm64
+        export SUBARCH=arm64
+
+        export KBUILD_BUILD_USER=github
+        export KBUILD_BUILD_HOST=actions
+
+        export PATH=$PWD/clang/bin:$PATH
+
+        make O=out clean
+
+        make O=out \
+          ARCH=arm64 \
+          vendor/sdm845-perf_defconfig
+
+        make -j$(nproc --all) O=out \
+          ARCH=arm64 \
+          CC=clang \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          CROSS_COMPILE=aarch64-linux-gnu-
+
+    - name: Upload Image
+      uses: actions/upload-artifact@v4
+      with:
+        name: kernel-image
+        path: |
+          out/arch/arm64/boot/Image.gz-dtb
