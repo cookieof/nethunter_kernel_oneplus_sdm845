@@ -16,7 +16,6 @@ jobs:
     - name: Install packages
       run: |
         sudo apt update
-
         sudo apt install -y \
           bc \
           bison \
@@ -46,8 +45,7 @@ jobs:
           unzip \
           xz-utils \
           zip \
-          zlib1g-dev \
-          gcc-aarch64-linux-gnu
+          zlib1g-dev
 
     - name: Clone Proton Clang
       run: |
@@ -72,15 +70,21 @@ jobs:
         export KBUILD_BUILD_USER=github
         export KBUILD_BUILD_HOST=actions
 
+        # 将 Proton Clang 的 bin 目录加入环境变量
         export PATH=$PWD/clang/bin:$PATH
 
+        # 清理输出目录
         make O=out ARCH=arm64 clean
 
+        # 配置 defconfig
         make O=out ARCH=arm64 enchilada_defconfig
 
-        make -j$(nproc --all) \
+        # 开始编译 (为了好抓错，暂时将参数调整为 -j2)
+        # 引入 KCFLAGS="-w" 屏蔽所有版本不兼容带来的警告干扰
+        make -j2 \
           O=out \
           ARCH=arm64 \
+          KCFLAGS="-w" \
           CC=clang \
           CROSS_COMPILE=aarch64-linux-gnu- \
           CLANG_TRIPLE=aarch64-linux-gnu- \
