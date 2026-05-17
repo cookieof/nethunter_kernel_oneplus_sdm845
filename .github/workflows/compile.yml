@@ -1,108 +1,43 @@
-name: Build OnePlus 6 NetHunter Kernel
+name: Build NetHunter Kernel
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 允许你手动点击按钮触发编译
+
+# 必须添加以下权限，否则最后一步无法上传 releases 刷机包
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-kernel:
+    name: Build Kernel via GitHub Actions
     runs-on: ubuntu-22.04
-
     steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        sudo apt update
-
-        sudo apt install -y \
-          bc \
-          bison \
-          build-essential \
-          ccache \
-          curl \
-          flex \
-          g++-multilib \
-          gcc-multilib \
-          git \
-          gnupg \
-          gperf \
-          imagemagick \
-          lib32ncurses5-dev \
-          lib32readline-dev \
-          lib32z1-dev \
-          libelf-dev \
-          liblz4-tool \
-          libncurses5-dev \
-          libsdl1.2-dev \
-          libssl-dev \
-          lld \
-          lz4 \
-          lzop \
-          pngcrush \
-          rsync \
-          schedtool \
-          squashfs-tools \
-          unzip \
-          xz-utils \
-          zip \
-          zlib1g-dev \
-          gcc-aarch64-linux-gnu
-
-    - name: Clone Neutron Clang
-      run: |
-        git clone --depth=1 \
-          https://github.com/Neutron-Toolchains/clang.git \
-          clang
-
-    - name: Show compiler
-      run: |
-        clang/bin/clang --version
-
-    - name: Build kernel
-      run: |
-        export ARCH=arm64
-        export SUBARCH=arm64
-
-        export KBUILD_BUILD_USER=github
-        export KBUILD_BUILD_HOST=actions
-
-        export PATH=$PWD/clang/bin:$PATH
-
-        mkdir -p out
-
-        make O=out ARCH=arm64 clean
-
-        make O=out ARCH=arm64 enchilada_defconfig
-
-        make -j$(nproc --all) \
-          O=out \
-          ARCH=arm64 \
-          CC=clang \
-          CROSS_COMPILE=aarch64-linux-gnu- \
-          CLANG_TRIPLE=aarch64-linux-gnu- \
-          LD=ld.lld \
-          AR=llvm-ar \
-          NM=llvm-nm \
-          OBJCOPY=llvm-objcopy \
-          OBJDUMP=llvm-objdump \
-          STRIP=llvm-strip
-
-    - name: Verify output
-      run: |
-        ls -lah out/arch/arm64/boot/
-
-    - name: Upload Image.gz-dtb
-      uses: actions/upload-artifact@v4
-      with:
-        name: OnePlus6-Kernel
-        path: |
-          out/arch/arm64/boot/Image.gz-dtb
-
-    - name: Upload dtbo
-      uses: actions/upload-artifact@v4
-      with:
-        name: OnePlus6-dtbo
-        path: |
-          out/arch/arm64/boot/dtbo.img
-        if-no-files-found: ignore
+      - name: Build Kernel
+        uses: dabao1955/kernel_build_action@main
+        with:
+          # 内核源码地址
+          kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
+          
+          # 对应的分支名
+          kernel-branch: nethunter-lineage-22.2
+          
+          # 一加 6/6T 骁龙 845 的通用配置文件名
+          config: sdm845_defconfig 
+          
+          arch: arm64
+          
+          # 【核心修改】关闭 GCC，开启 Clang 和 LLVM，避开 Ubuntu 环境的包冲突
+          aosp-gcc: false
+          aosp-clang: true
+          llvm: true
+          
+          # 系统版本与 Clang 编译器版本
+          android-version: 14
+          aosp-clang-version: r450784d
+          
+          # 自动打包并上传
+          anykernel3: true
+          release: true
+          
+          # 传递 GitHub Token 用于发布 Release
+          access-token: ${{ secrets.GITHUB_TOKEN }}
