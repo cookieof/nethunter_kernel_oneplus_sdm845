@@ -18,8 +18,9 @@ jobs:
           # 内核源码地址
           kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
           
-          # 【重要修改】请根据你想要适配的 ROM 填写分支，例如最新的 lineage-22.2
-          kernel-branch: nethunter-lineage-22.2
+          # 【重要修改】请根据你手机当前装的 ROM 填写对应的分支名
+          # 例如：如果你装的是 Android 14 的 LineageOS 21，这里就填 nethunter-lineage-21.0
+          kernel-branch: nethunter-lineage-21.0
           
           # 一加 6/6T 骁龙 845 的通用配置文件名
           config: sdm845_defconfig 
@@ -28,9 +29,9 @@ jobs:
           aosp-gcc: true
           aosp-clang: true
           
-          # 【重要修改】根据你的分支适配的系统版本修改，如果是新版 LineageOS 建议设为 12 或更高
-          android-version: 12
-          aosp-clang-version: r383902
+          # 【重要修改】根据你的分支适配的系统版本修改，如果是新版 LineageOS 建议设为 14
+          android-version: 14
+          aosp-clang-version: r450784d
           
           # 自动打包并上传
           anykernel3: true
