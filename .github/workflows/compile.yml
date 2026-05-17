@@ -9,10 +9,8 @@ permissions:
 jobs:
   build-kernel:
     name: Build Kernel via GitHub Actions
-    # 换回主流系统，保证秒排到服务器，不用干等
     runs-on: ubuntu-latest
     steps:
-      # 【核心大招】在编译前，强行删掉导致报错冲突的系统自带垃圾包
       - name: Fix GCC Conflict Dependencies
         run: |
           sudo apt-get remove -y gcc-multilib g++-multilib || true
@@ -28,7 +26,10 @@ jobs:
           aosp-gcc: true
           aosp-clang: true
           android-version: 14
-          aosp-clang-version: r450784d
+          
+          # 【核心修改】修正错别字，从末尾的 d 改为 e（r450784e 是 Google 官方真实存在的版本）
+          aosp-clang-version: r450784e
+          
           anykernel3: true
           release: true
           access-token: ${{ secrets.GITHUB_TOKEN }}
