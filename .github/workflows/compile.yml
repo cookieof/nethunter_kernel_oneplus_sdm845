@@ -23,12 +23,15 @@ jobs:
           kernel-branch: nethunter-lineage-22.2
           config: sdm845_defconfig 
           arch: arm64
-          aosp-gcc: true
-          aosp-clang: true
           
-          # 【核心修改】降回 11，确保脚本能从 Google 顺利下载到配套的 GCC 编译器
-          android-version: 11
-          aosp-clang-version: r416183b
+          # 【核心修改 1】关闭频繁引发 400 和 128 错误的原生 AOSP 下载链
+          aosp-gcc: false
+          aosp-clang: false
+          
+          # 【核心修改 2】直接借用极客社区针对新系统（Android 14/15）专门打包优化的高级 Clang 工具链
+          # 这个工具链自带了所有老内核需要的汇编组件，不需要再单独下载 GCC 
+          other-clang-url: https://github.com/xiangfeidexiaohuo/AOSP-Clang
+          other-clang-branch: main
           
           anykernel3: true
           release: true
