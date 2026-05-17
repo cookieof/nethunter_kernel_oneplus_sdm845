@@ -23,16 +23,23 @@ jobs:
           kernel-branch: nethunter-lineage-22.2
           config: sdm845_defconfig 
           arch: arm64
-          aosp-gcc: true
+          
+          # 【核心调整 1】关闭古老的 AOSP GCC，全面拥抱全 Clang 编译方案
+          aosp-gcc: false
           aosp-clang: true
-          android-version: 11
-          aosp-clang-version: r383902
+          
+          # 【核心调整 2】直接拉满到真实存在、极为现代的官方 Android 14 编译链
+          android-version: 14
+          aosp-clang-version: r487747c
+          
           anykernel3: true
           release: true
           access-token: ${{ secrets.GITHUB_TOKEN }}
           
-          # 【语法彻底修正】改用 "|" 符号，这是 GitHub 官方标准的多行参数传入方式，绝不再报格式错误
+          # 【核心调整 3】配合高级编译器，注入完整且绝对兼容的现代 LLVM 变量
           extra-make-args: |
+            LLVM=1
+            LLVM_IAS=1
             CLANG_TRIPLE=aarch64-linux-gnu-
             LD=ld.lld
             AR=llvm-ar
