@@ -1,0 +1,54 @@
+name: Build NetHunter Kernel for OnePlus 6 (LOS 22.2)
+
+on:
+  workflow_dispatch: # 允许你手动点击按钮触发编译
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Kernel Source
+      uses: actions/checkout@v4
+      with:
+        ref: nethunter-lineage-22.2 # ！！！这里已经为你改成了最新的 22.2 分支！！！
+
+    - name: Setup Build Environment
+      run: |
+        sudo apt update
+        sudo apt install -y bc build-essential libncurses5-dev libssl-dev xz-utils git bison flex libelf-dev clang lld ccache zip python3
+
+    - name: Download Toolchain (Proton-Clang)
+      run: |
+        git clone --depth=1 https://github.com/kdrag0n/proton-clang.git $GITHUB_WORKSPACE/toolchain
+
+    - name: Compile Kernel
+      run: |
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
+        # 一加6在较新系统下通常用 vendor/sdm845-perf_defconfig 或 sdm845_defconfig
+        make O=out sdm845_defconfig
+        make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+    - name: Pack Kernel (AnyKernel3)
+      run: |
+        # 下载AnyKernel3打包工具
+        git clone https://github.com/osm0sis/AnyKernel3.git $GITHUB_WORKSPACE/AnyKernel3
+        # 将编译出来的内核镜像复制到 AnyKernel3 目录
+        # 注意：部分 Android 15 内核产物叫 Image，部分叫 Image.gz-dtb，这里做个兼容拷贝
+        cp out/arch/arm64/boot/Image* $GITHUB_WORKSPACE/AnyKernel3/ || true
+        cp out/arch/arm64/boot/dtbo.img $GITHUB_WORKSPACE/AnyKernel3/ || true
+        cd $GITHUB_WORKSPACE/AnyKernel3
+        
+        # 针对一加6 (enchilada) 修改AnyKernel3配置
+        sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+        sed -i 's/kernel.string=.*/kernel.string=NetHunter Kernel for LOS 22.2/g' anykernel.sh
+        
+        # 打包成卡刷 zip
+        zip -r9 ../NetHunter-Kernel-Enchilada-22.2.zip *
+
+    - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetHunter-Kernel-LOS22.2
+        path: NetHunter-Kernel-Enchilada-22.2.zip
