@@ -3,6 +3,10 @@ name: Build NetHunter Kernel
 on:
   workflow_dispatch: # 允许你手动点击按钮触发编译
 
+# 必须添加以下权限，否则最后一步无法上传 releases 刷机包
+permissions:
+  contents: write
+
 jobs:
   build-kernel:
     name: Build Kernel via GitHub Actions
@@ -11,20 +15,26 @@ jobs:
       - name: Build Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          # 你想要编译的内核源码地址和分支
+          # 内核源码地址
           kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
-          kernel-branch: ten # 如果该仓库有其他分支（如 ten、pie、main 等），请修改为你想编译的分支名
           
-          # 骁龙 845 的一加 6/6T 常规配置文件名 (通常是 sdm845_defconfig 或 enchilada_defconfig/fajita_defconfig)
-          # 注意：请先进入源码的 arch/arm64/configs/ 目录下确认具体的 defconfig 文件名
+          # 【重要修改】请根据你想要适配的 ROM 填写分支，例如最新的 lineage-22.2
+          kernel-branch: nethunter-lineage-22.2
+          
+          # 一加 6/6T 骁龙 845 的通用配置文件名
           config: sdm845_defconfig 
           
           arch: arm64
           aosp-gcc: true
           aosp-clang: true
-          android-version: 10 # 对应你源码的 Android 版本
-          aosp-clang-version: r383902 # 骁龙845(内核4.9)较为通用的Clang版本，也可根据需要调整
           
-          # 自动打包成可刷入的 AnyKernel3 压缩包
+          # 【重要修改】根据你的分支适配的系统版本修改，如果是新版 LineageOS 建议设为 12 或更高
+          android-version: 12
+          aosp-clang-version: r383902
+          
+          # 自动打包并上传
           anykernel3: true
           release: true
+          
+          # 传递 GitHub Token 用于发布 Release
+          access-token: ${{ secrets.GITHUB_TOKEN }}
