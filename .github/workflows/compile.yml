@@ -1,48 +1,109 @@
-name: Build NetHunter Kernel
+name: Build OnePlus6 NetHunter Kernel
 
 on:
-  workflow_dispatch: # 允许你手动点击按钮触发编译
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  build-kernel:
-    name: Build Kernel via GitHub Actions
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fix GCC Conflict Dependencies
-        run: |
-          sudo apt-get remove -y gcc-multilib g++-multilib || true
-          sudo apt-get autoremove -y || true
+  build:
+    runs-on: ubuntu-22.04
 
-      - name: Build Kernel
-        uses: dabao1955/kernel_build_action@main
-        with:
-          kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
-          kernel-branch: nethunter-lineage-22.2
-          config: sdm845_defconfig 
-          arch: arm64
-          
-          # 【彻底解决限制】两个同时开为 true，满足 Actions 的硬性检测条件
-          aosp-gcc: true
-          aosp-clang: true
-          
-          # 【核心闭环】改用 Android 12 的编译器环境
-          # 12 既拥有全套可公开下载的 GCC 分支，又拥有完美支持 modern 变量的高版 Clang (r416183b)
-          android-version: 12
-          aosp-clang-version: r416183b
-          
-          anykernel3: true
-          release: true
-          access-token: ${{ secrets.GITHUB_TOKEN }}
-          
-          # 配合 Android 12 Clang 的现代内核编译变量，保证编译不再报错
-          extra-make-args: |
-            CLANG_TRIPLE=aarch64-linux-gnu-
-            LD=ld.lld
-            AR=llvm-ar
-            NM=llvm-nm
-            OBJCOPY=llvm-objcopy
-            OBJDUMP=llvm-objdump
-            STRIP=llvm-strip
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install packages
+      run: |
+        sudo apt update
+
+        sudo apt install -y \
+          bc \
+          bison \
+          build-essential \
+          ccache \
+          curl \
+          flex \
+          g++-multilib \
+          gcc-multilib \
+          git \
+          gnupg \
+          gperf \
+          imagemagick \
+          lib32ncurses5-dev \
+          lib32readline-dev \
+          lib32z1-dev \
+          libelf-dev \
+          liblz4-tool \
+          libncurses5-dev \
+          libsdl1.2-dev \
+          libssl-dev \
+          lld \
+          lz4 \
+          lzop \
+          pngcrush \
+          rsync \
+          schedtool \
+          squashfs-tools \
+          unzip \
+          xz-utils \
+          zip \
+          zlib1g-dev \
+          gcc-aarch64-linux-gnu
+
+    - name: Clone Neutron Clang
+      run: |
+        git clone --depth=1 \
+          https://github.com/Neutron-Toolchains/clang.git \
+          clang
+
+    - name: Prepare
+      run: |
+        mkdir -p out
+
+    - name: Show configs
+      run: |
+        find arch/arm64/configs -name "*enchilada*"
+        find arch/arm64/configs -name "*sdm845*"
+
+    - name: Build kernel
+      run: |
+        export ARCH=arm64
+        export SUBARCH=arm64
+
+        export KBUILD_BUILD_USER=github
+        export KBUILD_BUILD_HOST=actions
+
+        export PATH=$PWD/clang/bin:$PATH
+
+        make O=out ARCH=arm64 clean
+
+        make O=out ARCH=arm64 enchilada_defconfig
+
+        make -j$(nproc --all) \
+          O=out \
+          ARCH=arm64 \
+          CC=clang \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          CLANG_TRIPLE=aarch64-linux-gnu- \
+          LD=ld.lld \
+          AR=llvm-ar \
+          NM=llvm-nm \
+          OBJCOPY=llvm-objcopy \
+          OBJDUMP=llvm-objdump \
+          STRIP=llvm-strip
+
+    - name: Upload Image
+      uses: actions/upload-artifact@v4
+      with:
+        name: OnePlus6-Kernel
+        path: |
+          out/arch/arm64/boot/Image.gz-dtb
+
+    - name: Upload dtbo
+      uses: actions/upload-artifact@v4
+      with:
+        name: OnePlus6-dtbo
+        path: |
+          out/arch/arm64/boot/dtbo.img
+        if-no-files-found: ignore
