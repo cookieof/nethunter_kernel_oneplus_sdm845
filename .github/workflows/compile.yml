@@ -11,11 +11,13 @@ jobs:
     name: Build Kernel via GitHub Actions
     runs-on: ubuntu-latest
     steps:
+      # 1. 彻底解决 Ubuntu 环境自带的软件包冲突
       - name: Fix GCC Conflict Dependencies
         run: |
           sudo apt-get remove -y gcc-multilib g++-multilib || true
           sudo apt-get autoremove -y || true
 
+      # 2. 调用内核编译 action
       - name: Build Kernel
         uses: dabao1955/kernel_build_action@main
         with:
@@ -24,15 +26,15 @@ jobs:
           config: sdm845_defconfig 
           arch: arm64
           
-          # 【核心修改 1】关闭频繁引发 400 和 128 错误的原生 AOSP 下载链
-          aosp-gcc: false
-          aosp-clang: false
+          # 3. 同时开启 AOSP 原生的 GCC 和 Clang，这是满足 4.9 老内核的唯一正确姿势
+          aosp-gcc: true
+          aosp-clang: true
           
-          # 【核心修改 2】直接借用极客社区针对新系统（Android 14/15）专门打包优化的高级 Clang 工具链
-          # 这个工具链自带了所有老内核需要的汇编组件，不需要再单独下载 GCC 
-          other-clang-url: https://github.com/xiangfeidexiaohuo/AOSP-Clang
-          other-clang-branch: main
+          # 4. 【终极对齐】指定 Android 11 工具链，并匹配对应真实存在的 Clang 版本
+          android-version: 11
+          aosp-clang-version: r383902
           
+          # 5. 打包和权限控制
           anykernel3: true
           release: true
           access-token: ${{ secrets.GITHUB_TOKEN }}
