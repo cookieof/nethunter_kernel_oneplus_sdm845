@@ -3,41 +3,32 @@ name: Build NetHunter Kernel
 on:
   workflow_dispatch: # 允许你手动点击按钮触发编译
 
-# 必须添加以下权限，否则最后一步无法上传 releases 刷机包
 permissions:
   contents: write
 
 jobs:
   build-kernel:
     name: Build Kernel via GitHub Actions
-    # 【核心修改】改用 ubuntu-20.04，彻底根除 22.04 下的 GCC 包冲突
-    runs-on: ubuntu-20.04
+    # 换回主流系统，保证秒排到服务器，不用干等
+    runs-on: ubuntu-latest
     steps:
+      # 【核心大招】在编译前，强行删掉导致报错冲突的系统自带垃圾包
+      - name: Fix GCC Conflict Dependencies
+        run: |
+          sudo apt-get remove -y gcc-multilib g++-multilib || true
+          sudo apt-get autoremove -y || true
+
       - name: Build Kernel
         uses: dabao1955/kernel_build_action@main
         with:
-          # 内核源码地址
           kernel-url: https://github.com/V0lk3n/nethunter_kernel_oneplus_sdm845
-          
-          # 对应的分支名
           kernel-branch: nethunter-lineage-22.2
-          
-          # 一加 6/6T 骁龙 845 的通用配置文件名
           config: sdm845_defconfig 
-          
           arch: arm64
-          
-          # 重新全部开启，在 ubuntu-20.04 下它们不会再冲突了
           aosp-gcc: true
           aosp-clang: true
-          
-          # 系统版本与 4.9 内核通用的 Clang 编译器版本
           android-version: 14
           aosp-clang-version: r450784d
-          
-          # 自动打包并上传
           anykernel3: true
           release: true
-          
-          # 传递 GitHub Token 用于发布 Release
           access-token: ${{ secrets.GITHUB_TOKEN }}
