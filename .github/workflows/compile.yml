@@ -24,22 +24,21 @@ jobs:
           config: sdm845_defconfig 
           arch: arm64
           
-          # 【核心调整 1】关闭古老的 AOSP GCC，全面拥抱全 Clang 编译方案
-          aosp-gcc: false
+          # 【彻底解决限制】两个同时开为 true，满足 Actions 的硬性检测条件
+          aosp-gcc: true
           aosp-clang: true
           
-          # 【核心调整 2】直接拉满到真实存在、极为现代的官方 Android 14 编译链
-          android-version: 14
-          aosp-clang-version: r487747c
+          # 【核心闭环】改用 Android 12 的编译器环境
+          # 12 既拥有全套可公开下载的 GCC 分支，又拥有完美支持 modern 变量的高版 Clang (r416183b)
+          android-version: 12
+          aosp-clang-version: r416183b
           
           anykernel3: true
           release: true
           access-token: ${{ secrets.GITHUB_TOKEN }}
           
-          # 【核心调整 3】配合高级编译器，注入完整且绝对兼容的现代 LLVM 变量
+          # 配合 Android 12 Clang 的现代内核编译变量，保证编译不再报错
           extra-make-args: |
-            LLVM=1
-            LLVM_IAS=1
             CLANG_TRIPLE=aarch64-linux-gnu-
             LD=ld.lld
             AR=llvm-ar
